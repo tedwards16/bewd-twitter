@@ -5,7 +5,7 @@ class TweetsController < ApplicationController
       end
     
       def index_by_user
-        user = User.find_by(username: params[:username])
+        @user = User.find_by(username: params[:username])
         @tweets = @user.tweets.order(created_at: :desc)
         render 'tweets/index'
       end
@@ -19,7 +19,7 @@ class TweetsController < ApplicationController
           @tweet = user.tweets.new(tweet_params)
     
           if @tweet.save
-            render 'tasks/create'
+            render 'tweets/create'
           else
             render json: { success: false }
           end
@@ -29,10 +29,17 @@ class TweetsController < ApplicationController
       end
     
       def destroy
-        @tweet = Tweet.find_by(id: params[:id])
+        token = cookies.signed[:twitter_session_token]
+        session = Session.find_by(token: token)
+
+        if session
+          @tweet = Tweet.find_by(id: params[:id])
     
-        if @tweet&.destroy
-          render json: { success: true }
+          if @tweet&.destroy
+            render json: { success: true }
+          else
+            render json: { success: false }
+          end
         else
           render json: { success: false }
         end
@@ -42,7 +49,7 @@ class TweetsController < ApplicationController
     
       private
     
-      def task_params
+      def tweet_params
         params.require(:tweet).permit(:message, :user_id)
       end
 end
